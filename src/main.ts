@@ -7,7 +7,7 @@ async function bootstrap() {
 
   // CORS 설정 추가
   app.enableCors({
-    origin: true, // 모든 오리진 허용 (프로덕션에서는 특정 도메인으로 제한하는 것이 좋습니다)
+    origin: true, // 모든 오리진 허용
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -25,7 +25,6 @@ async function bootstrap() {
         },
       },
     })
-    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
@@ -33,3 +32,4 @@ async function bootstrap() {
   await app.listen(3000);
 }
 bootstrap();
+
