@@ -11,6 +11,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 // Passport 인증 후 Request에 user 속성 추가
 interface RequestWithUser extends Request {
@@ -41,17 +42,30 @@ export class AuthController {
 
     // 프론트엔드 URL로 리디렉션 (토큰 포함)
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
+
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
     return res.redirect(`${frontendUrl}/auth/callback`);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '현재 인증된 사용자 정보 조회' })
+  @ApiResponse({
+    status: 200,
+    description: '인증된 사용자 정보 반환',
+  })
+  async getMe(@Req() req: RequestWithUser) {
+    return this.authService.getUserProfile(req.user.id);
   }
 
   @Post('refresh')

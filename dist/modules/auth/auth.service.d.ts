@@ -11,6 +11,15 @@ export declare class AuthService {
     private jwtService;
     private configService;
     constructor(usersRepository: Repository<User>, socialAccountsRepository: Repository<SocialAccount>, refreshTokensRepository: Repository<RefreshToken>, jwtService: JwtService, configService: ConfigService);
+    getUserProfile(userId: number): Promise<{
+        id: number;
+        email: string;
+        name: string;
+        profileImage: string;
+        role: string;
+        isActive: boolean;
+        createdAt: Date;
+    }>;
     googleLogin(userData: any): Promise<{
         accessToken: string;
         refreshToken: string;

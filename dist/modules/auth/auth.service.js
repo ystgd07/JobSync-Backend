@@ -34,6 +34,32 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
         this.configService = configService;
     }
+    async getUserProfile(userId) {
+        const user = await this.usersRepository.findOne({
+            where: { id: userId },
+            select: [
+                'id',
+                'email',
+                'name',
+                'profileImage',
+                'role',
+                'isActive',
+                'createdAt',
+            ],
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            profileImage: user.profileImage,
+            role: user.role,
+            isActive: user.isActive,
+            createdAt: user.createdAt,
+        };
+    }
     async googleLogin(userData) {
         let socialAccount = await this.socialAccountsRepository.findOne({
             where: {

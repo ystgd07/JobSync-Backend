@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const auth_service_1 = require("./auth.service");
 const swagger_1 = require("@nestjs/swagger");
+const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -38,6 +39,9 @@ let AuthController = class AuthController {
             sameSite: 'lax',
         });
         return res.redirect(`${frontendUrl}/auth/callback`);
+    }
+    async getMe(req) {
+        return this.authService.getUserProfile(req.user.id);
     }
     async refreshToken(refreshToken) {
         return this.authService.refreshToken(refreshToken);
@@ -66,6 +70,19 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuthRedirect", null);
+__decorate([
+    (0, common_1.Get)('me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiOperation)({ summary: '현재 인증된 사용자 정보 조회' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '인증된 사용자 정보 반환',
+    }),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getMe", null);
 __decorate([
     (0, common_1.Post)('refresh'),
     (0, swagger_1.ApiOperation)({ summary: '토큰 갱신' }),

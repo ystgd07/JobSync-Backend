@@ -8,6 +8,15 @@ export declare class AuthController {
     constructor(authService: AuthService);
     googleAuth(): void;
     googleAuthRedirect(req: RequestWithUser, res: Response): Promise<void>;
+    getMe(req: RequestWithUser): Promise<{
+        id: number;
+        email: string;
+        name: string;
+        profileImage: string;
+        role: string;
+        isActive: boolean;
+        createdAt: Date;
+    }>;
     refreshToken(refreshToken: string): Promise<{
         accessToken: string;
         refreshToken: string;

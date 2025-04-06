@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +25,36 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
+
+  // 현재 인증된 사용자 정보 조회
+  async getUserProfile(userId: number) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: [
+        'id',
+        'email',
+        'name',
+        'profileImage',
+        'role',
+        'isActive',
+        'createdAt',
+      ],
+    });
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      profileImage: user.profileImage,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+    };
+  }
 
   async googleLogin(userData: any) {
     // 소셜 계정 조회

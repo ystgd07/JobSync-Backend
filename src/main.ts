@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // 쿠키 파서 미들웨어 추가
+  app.use(cookieParser());
 
   // CORS 설정 추가
   app.enableCors({
@@ -25,6 +29,7 @@ async function bootstrap() {
         },
       },
     })
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
