@@ -36,35 +36,35 @@ __decorate([
     __metadata("design:type", Number)
 ], Job.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ length: 50, nullable: false }),
     __metadata("design:type", String)
 ], Job.prototype, "source", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'external_id' }),
+    (0, typeorm_1.Column)({ name: 'external_id', length: 50, nullable: false }),
     __metadata("design:type", String)
 ], Job.prototype, "externalId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ type: 'text', nullable: false }),
     __metadata("design:type", String)
 ], Job.prototype, "title", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ type: 'text', nullable: false }),
     __metadata("design:type", String)
 ], Job.prototype, "company", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Job.prototype, "location", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'annual_from', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'annual_from', type: 'integer', nullable: true }),
     __metadata("design:type", Number)
 ], Job.prototype, "annualFrom", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'annual_to', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'annual_to', type: 'integer', nullable: true }),
     __metadata("design:type", Number)
 ], Job.prototype, "annualTo", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'detailurl', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'detailurl', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Job.prototype, "detailUrl", void 0);
 __decorate([
@@ -72,7 +72,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Job.prototype, "dueTime", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Job.prototype, "description", void 0);
 __decorate([
@@ -87,27 +87,34 @@ __decorate([
     (0, typeorm_1.Column)({
         name: 'scraped_at',
         type: 'timestamp',
+        nullable: false,
         default: () => 'CURRENT_TIMESTAMP',
     }),
     __metadata("design:type", Date)
 ], Job.prototype, "scrapedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 'active' }),
+    (0, typeorm_1.Column)({
+        length: 20,
+        nullable: false,
+        default: 'active',
+    }),
     __metadata("design:type", String)
 ], Job.prototype, "status", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         name: 'last_validated_at',
         type: 'timestamp',
+        nullable: false,
         default: () => 'CURRENT_TIMESTAMP',
     }),
     __metadata("design:type", Date)
 ], Job.prototype, "lastValidatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ name: 'position', length: 100, nullable: true }),
     __metadata("design:type", String)
 ], Job.prototype, "position", void 0);
 exports.Job = Job = __decorate([
-    (0, typeorm_1.Entity)('jobs')
+    (0, typeorm_1.Entity)('jobs'),
+    (0, typeorm_1.Unique)('unique_job', ['source', 'externalId'])
 ], Job);
 //# sourceMappingURL=job.entity.js.map
