@@ -16,6 +16,7 @@ const config_1 = require("@nestjs/config");
 const auth_module_1 = require("./modules/auth/auth.module");
 const jobs_module_1 = require("./modules/jobs/jobs.module");
 const favorites_module_1 = require("./modules/favorites/favorites.module");
+const search_module_1 = require("./modules/search/search.module");
 const job_entity_1 = require("./modules/jobs/entities/job.entity");
 const favorite_job_entity_1 = require("./modules/favorites/entities/favorite-job.entity");
 let AppModule = class AppModule {
@@ -27,6 +28,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             jobs_module_1.JobsModule,
             favorites_module_1.FavoritesModule,
+            search_module_1.SearchModule,
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
             }),

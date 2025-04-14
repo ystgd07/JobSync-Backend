@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { SearchModule } from './modules/search/search.module';
 import { Job } from './modules/jobs/entities/job.entity';
 import { FavoriteJob } from './modules/favorites/entities/favorite-job.entity';
 
@@ -15,6 +16,7 @@ import { FavoriteJob } from './modules/favorites/entities/favorite-job.entity';
     AuthModule,
     JobsModule,
     FavoritesModule,
+    SearchModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
