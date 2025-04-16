@@ -1,0 +1,146 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ dev ]  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    
+    - name: Build and push Docker image
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: false
+        tags: jobsync-backend:${{ github.sha }}
+        outputs: type=docker,dest=/tmp/jobsync-image.tar
+    
+    - name: Upload image to EC2
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: "/tmp/jobsync-image.tar"
+        target: "/tmp"
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          # Docker 이미지 로드
+          docker load < /tmp/jobsync-image.tar
+          rm /tmp/jobsync-image.tar
+          
+          # 배포 디렉토리로 이동
+          mkdir -p ~/jobsync-backend/deploy
+          cd ~/jobsync-backend/deploy
+          
+          # 환경 변수 파일 생성 또는 업데이트
+          if [ ! -f .env ]; then
+            echo "Creating new .env file"
+            cat > .env << EOF
+          DATABASE_HOST=${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT=${{ secrets.DATABASE_PORT }}
+          DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME=${{ secrets.DATABASE_NAME }}
+          ELASTICSEARCH_NODE=${{ secrets.ELASTICSEARCH_NODE }}
+          ELASTICSEARCH_USERNAME=${{secrets.ELASTICSEARCH_USERNAME }}
+          ELASTICSEARCH_PASSWORD=${{secrets.ELASTICSEARCH_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ACCESS_EXPIRATION=${{ secrets.JWT_ACCESS_EXPIRATION }}
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_REFRESH_EXPIRATION=${{ secrets.JWT_REFRESH_EXPIRATION }}
+          JWT_REFRESH_EXPIRATION_SECONDS=${{ secrets.JWT_REFRESH_EXPIRATION_SECONDS }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
+          IMAGE_TAG=${{ github.sha }}
+          EOF
+          else
+            # 이미지 태그만 업데이트
+            sed -i "s/IMAGE_TAG=.*/IMAGE_TAG=${{ github.sha }}/" .env
+          fi
+          
+          # docker-compose.yml 파일 생성 또는 업데이트
+          cat > docker-compose.yml << 'EOF'
+          version: '3'
+          
+          services:
+            backend:
+              container_name: jobsync-backend
+              image: jobsync-backend:${IMAGE_TAG}
+              restart: always
+              ports:
+                - "3000:3000"
+              environment:
+                - NODE_ENV=production
+                - DATABASE_HOST=${DATABASE_HOST}
+                - DATABASE_PORT=${DATABASE_PORT}
+                - DATABASE_USERNAME=${DATABASE_USERNAME}
+                - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+                - DATABASE_NAME=${DATABASE_NAME}
+              volumes:
+                - ./logs:/app/logs
+              networks:
+                - app-network
+          
+          networks:
+            app-network:
+              driver: bridge
+          EOF
+          
+          # 이전 컨테이너 백업 및 새 컨테이너 시작
+          if [ "$(docker ps -q -f name=jobsync-backend)" ]; then
+            echo "Backing up current container"
+            docker rename jobsync-backend jobsync-backend-old
+            docker stop jobsync-backend-old
+          fi
+          
+          # 새 컨테이너 시작
+          docker-compose up -d
+          
+          # 새 컨테이너 헬스체크
+          echo "Performing health check..."
+          for i in {1..10}; do
+            if curl -s http://localhost:3000/search/test | grep -q "success"; then
+              echo "New container is healthy!"
+              
+              # 이전 컨테이너 제거
+              if [ "$(docker ps -aq -f name=jobsync-backend-old)" ]; then
+                docker rm -f jobsync-backend-old
+              fi
+              
+              # 안 쓰는 이미지 정리
+              docker image prune -af --filter "until=24h"
+              
+              echo "Deployment successful!"
+              exit 0
+            fi
+            
+            echo "Waiting for container to be healthy... ($i/10)"
+            sleep 3
+          done
+          
+          # 헬스체크 실패 시 롤백
+          echo "Health check failed! Rolling back..."
+          if [ "$(docker ps -aq -f name=jobsync-backend-old)" ]; then
+            docker start jobsync-backend-old
+            docker rename jobsync-backend-old jobsync-backend
+            docker stop $(docker ps -q -f name=jobsync-backend | head -n1)
+            echo "Rollback completed."
+            exit 1
+          fi
