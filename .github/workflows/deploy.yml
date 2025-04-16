@@ -74,7 +74,7 @@ jobs:
           EOF
           else
             # 이미지 태그만 업데이트
-            sed -i "s|IMAGE=.*|IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}|" .env
+            sed -i "s|IMAGE=.*|IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}|" .env
           fi
           
           # docker-compose.yml 파일 생성 또는 업데이트
@@ -89,12 +89,29 @@ jobs:
               ports:
                 - "3000:3000"
               environment:
+                # 데이터베이스 설정
                 - NODE_ENV=production
                 - DATABASE_HOST=${DATABASE_HOST}
                 - DATABASE_PORT=${DATABASE_PORT}
                 - DATABASE_USERNAME=${DATABASE_USERNAME}
                 - DATABASE_PASSWORD=${DATABASE_PASSWORD}
                 - DATABASE_NAME=${DATABASE_NAME}
+                
+                # Elasticsearch 설정
+                - ELASTICSEARCH_NODE=${ELASTICSEARCH_NODE}
+                - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+                - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+                
+                # JWT 인증 설정
+                - JWT_SECRET=${JWT_SECRET}
+                - JWT_ACCESS_EXPIRATION=${JWT_ACCESS_EXPIRATION}
+                - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+                - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+                - JWT_REFRESH_EXPIRATION_SECONDS=${JWT_REFRESH_EXPIRATION_SECONDS}
+                
+                # Google OAuth 설정
+                - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+                - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
                 - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
               volumes:
                 - ./logs:/app/logs
