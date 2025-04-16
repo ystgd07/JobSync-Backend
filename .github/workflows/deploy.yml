@@ -70,13 +70,14 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
-          FRONTEND_URL=${FRONTEND_URL}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}
           EOF
           else
             # 이미지 태그만 업데이트
             sed -i "s|IMAGE=.*|IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}|" .env
             sed -i "s|GOOGLE_CALLBACK_URL=.*|GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}|" .env
+            sed -i "s|FRONTEND_URL=.*|FRONTEND_URL=${{ secrets.FRONTEND_URL }}|" .env
           fi
           
           # docker-compose.yml 파일 생성 또는 업데이트
