@@ -1,5 +1,5 @@
 # 빌드 스테이지
-FROM node:18 AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # 실행 스테이지
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
