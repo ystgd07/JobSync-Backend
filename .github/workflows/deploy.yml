@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ dev ]  
+    branches: [ dev ]
 
 jobs:
   deploy:
@@ -15,23 +15,23 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
     
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    
     - name: Build and push Docker image
-      id: docker_build
       uses: docker/build-push-action@v2
       with:
         context: .
-        push: false
-        tags: jobsync-backend:${{ github.sha }}
-        outputs: type=docker,dest=/tmp/jobsync-image.tar
-    
-    - name: Upload image to EC2
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        source: "/tmp/jobsync-image.tar"
-        target: "/tmp"
+        push: true
+        tags: ${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}
     
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
@@ -40,9 +40,11 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # Docker 이미지 로드
-          docker load < /tmp/jobsync-image.tar
-          rm /tmp/jobsync-image.tar
+          # ECR 로그인
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
+          
+          # 이미지 풀
+          docker pull ${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}
           
           # 배포 디렉토리로 이동
           mkdir -p ~/jobsync-backend/deploy
@@ -68,11 +70,11 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
-          IMAGE_TAG=${{ github.sha }}
+          IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}
           EOF
           else
             # 이미지 태그만 업데이트
-            sed -i "s/IMAGE_TAG=.*/IMAGE_TAG=${{ github.sha }}/" .env
+            sed -i "s|IMAGE=.*|IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}|" .env
           fi
           
           # docker-compose.yml 파일 생성 또는 업데이트
@@ -82,7 +84,7 @@ jobs:
           services:
             backend:
               container_name: jobsync-backend
-              image: jobsync-backend:${IMAGE_TAG}
+              image: ${IMAGE}
               restart: always
               ports:
                 - "3000:3000"
@@ -93,6 +95,7 @@ jobs:
                 - DATABASE_USERNAME=${DATABASE_USERNAME}
                 - DATABASE_PASSWORD=${DATABASE_PASSWORD}
                 - DATABASE_NAME=${DATABASE_NAME}
+                - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
               volumes:
                 - ./logs:/app/logs
               networks:
@@ -103,7 +106,9 @@ jobs:
               driver: bridge
           EOF
           
-          # 이전 컨테이너 백업 및 새 컨테이너 시작
+          # 배포 및 헬스체크
+          bash -c "$(cat << 'EOFSCRIPT'
+          # 이전 컨테이너 백업
           if [ "$(docker ps -q -f name=jobsync-backend)" ]; then
             echo "Backing up current container"
             docker rename jobsync-backend jobsync-backend-old
@@ -113,7 +118,7 @@ jobs:
           # 새 컨테이너 시작
           docker-compose up -d
           
-          # 새 컨테이너 헬스체크
+          # 헬스체크
           echo "Performing health check..."
           for i in {1..10}; do
             if curl -s http://localhost:3000/search/test | grep -q "success"; then
@@ -140,7 +145,9 @@ jobs:
           if [ "$(docker ps -aq -f name=jobsync-backend-old)" ]; then
             docker start jobsync-backend-old
             docker rename jobsync-backend-old jobsync-backend
-            docker stop $(docker ps -q -f name=jobsync-backend | head -n1)
+            docker rm -f $(docker ps -q -f name=jobsync-backend | head -n1)
             echo "Rollback completed."
             exit 1
           fi
+          EOFSCRIPT
+          )"
