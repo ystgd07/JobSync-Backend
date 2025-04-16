@@ -2,7 +2,12 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import * as crypto from 'crypto';
 import * as cookieParser from 'cookie-parser';
+
+(global as any).crypto = {
+  randomUUID: crypto.randomUUID,
+};
 
 async function bootstrap() {
   // 로그 파일 설정
@@ -33,10 +38,11 @@ async function bootstrap() {
 
   // 쿠키 파서 미들웨어 추가
   app.use(cookieParser());
+  app.setGlobalPrefix('api'); // 모든 API에 /api prefix 추가
 
   // CORS 설정 추가
   app.enableCors({
-    origin: true, // 모든 오리진 허용
+    origin: ['https://www.jobsyncapp.com', 'https://jobsyncapp.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
