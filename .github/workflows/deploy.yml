@@ -70,6 +70,7 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
+          FRONTEND_URL=${FRONTEND_URL}
           IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}
           EOF
           else
@@ -114,6 +115,9 @@ jobs:
                 - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
                 - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
                 - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+
+                # 프론트엔드 URL
+                - FRONTEND_URL=${FRONTEND_URL}
               volumes:
                 - ./logs:/app/logs
               networks:
