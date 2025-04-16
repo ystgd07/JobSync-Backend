@@ -44,7 +44,7 @@ jobs:
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}
           
           # 이미지 풀
-          docker pull ${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}
+          docker pull ${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}
           
           # 배포 디렉토리로 이동
           mkdir -p ~/jobsync-backend/deploy
@@ -70,7 +70,7 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
-          IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync-backend:${{ github.sha }}
+          IMAGE=${{ steps.login-ecr.outputs.registry }}/jobsync/backend:${{ github.sha }}
           EOF
           else
             # 이미지 태그만 업데이트
