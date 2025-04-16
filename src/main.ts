@@ -39,7 +39,11 @@ async function bootstrap() {
 
   // CORS 설정 추가
   app.enableCors({
-    origin: ['https://www.jobsyncapp.com', 'https://jobsyncapp.com'],
+    origin: [
+      'https://www.jobsyncapp.com',
+      'https://jobsyncapp.com',
+      'http://ec2-43-202-227-147.ap-northeast-2.compute.amazonaws.com:3000',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
