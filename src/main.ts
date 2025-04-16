@@ -2,12 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import * as crypto from 'crypto';
 import * as cookieParser from 'cookie-parser';
-
-(global as any).crypto = {
-  randomUUID: crypto.randomUUID,
-};
 
 async function bootstrap() {
   // 로그 파일 설정
