@@ -33,7 +33,9 @@ async function bootstrap() {
 
   // 쿠키 파서 미들웨어 추가
   app.use(cookieParser());
-  app.setGlobalPrefix('api'); // 모든 API에 /api prefix 추가
+  app.setGlobalPrefix('api', {
+    exclude: ['/search/test'], // 테스트 API 경로
+  }); // 모든 API에 /api prefix 추가
 
   // CORS 설정 추가
   app.enableCors({
