@@ -14,6 +14,11 @@ const social_account_entity_1 = require("./modules/users/entities/social-account
 const refresh_token_entity_1 = require("./modules/users/entities/refresh-token.entity");
 const config_1 = require("@nestjs/config");
 const auth_module_1 = require("./modules/auth/auth.module");
+const jobs_module_1 = require("./modules/jobs/jobs.module");
+const favorites_module_1 = require("./modules/favorites/favorites.module");
+const search_module_1 = require("./modules/search/search.module");
+const job_entity_1 = require("./modules/jobs/entities/job.entity");
+const favorite_job_entity_1 = require("./modules/favorites/entities/favorite-job.entity");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -21,6 +26,9 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             auth_module_1.AuthModule,
+            jobs_module_1.JobsModule,
+            favorites_module_1.FavoritesModule,
+            search_module_1.SearchModule,
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
             }),
@@ -34,7 +42,7 @@ exports.AppModule = AppModule = __decorate([
                     username: configService.get('DATABASE_USERNAME'),
                     password: configService.get('DATABASE_PASSWORD'),
                     database: configService.get('DATABASE_NAME'),
-                    entities: [user_entity_1.User, social_account_entity_1.SocialAccount, refresh_token_entity_1.RefreshToken],
+                    entities: [user_entity_1.User, social_account_entity_1.SocialAccount, refresh_token_entity_1.RefreshToken, job_entity_1.Job, favorite_job_entity_1.FavoriteJob],
                     synchronize: configService.get('NODE_ENV') !== 'production',
                     logging: configService.get('NODE_ENV') === 'development',
                     ssl: true,
