@@ -76,6 +76,14 @@ export class SearchJobDto {
   })
   regions?: string[];
 
+  @ApiProperty({
+    required: false,
+    description: '경력 (연차)',
+    example: '1',
+    type: Number,
+  })
+  annualExperience?: number;
+
   @ApiProperty({ required: false, description: '다음 페이지 커서' })
   cursor?: string;
 

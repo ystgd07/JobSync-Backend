@@ -42,6 +42,21 @@ let SearchService = SearchService_1 = class SearchService {
                 this.logger.log(`${key}: ${JSON.stringify(searchParams[key])}, 타입: ${typeof searchParams[key]}`);
             });
             const { categories, regions, cursor, limit = 20 } = searchParams;
+            let annualExperience = null;
+            if (searchParams.annualExperience !== undefined &&
+                searchParams.annualExperience !== null) {
+                if (typeof searchParams.annualExperience === 'number') {
+                    annualExperience = searchParams.annualExperience;
+                }
+                else if (typeof searchParams.annualExperience === 'string') {
+                    const parsed = parseInt(searchParams.annualExperience, 10);
+                    if (!isNaN(parsed)) {
+                        annualExperience = parsed;
+                    }
+                }
+            }
+            this.logger.log(`경력 필터 값: ${annualExperience}, 타입: ${typeof annualExperience}`);
+            this.logger.log(`searchParams.annualExperience 원본 값: ${searchParams.annualExperience}, 타입: ${typeof searchParams.annualExperience}`);
             let cursorId;
             if (cursor) {
                 try {
@@ -79,9 +94,26 @@ let SearchService = SearchService_1 = class SearchService {
                 this.logger.log(`지역 필터 적용: ${regions.join(',')}`);
                 query = query.andWhere('job.location IN (:...regions)', { regions });
             }
+            if (annualExperience !== null) {
+                if (annualExperience === 0) {
+                    this.logger.log('신입 공고만 필터링합니다.');
+                    query = query.andWhere('(job.annualFrom = 0 OR job.annualFrom IS NULL)');
+                    this.logger.log('적용된 필터: job.annualFrom = 0 OR job.annualFrom IS NULL');
+                }
+                else {
+                    this.logger.log(`${annualExperience}년차 공고만 필터링합니다.`);
+                    query = query.andWhere('(job.annualFrom = :annualExperience OR (job.annualFrom <= :annualExperience AND (job.annualTo >= :annualExperience OR job.annualTo = 100)))', { annualExperience });
+                    this.logger.log(`적용된 필터: 경력 ${annualExperience}년차 포함 범위`);
+                }
+            }
+            else {
+                this.logger.log('경력 필터가 적용되지 않았습니다.');
+            }
             const queryStr = query.getQueryAndParameters();
             this.logger.log(`실행 쿼리: ${queryStr[0]}`);
             this.logger.log(`쿼리 파라미터: ${JSON.stringify(queryStr[1])}`);
+            const fullQuery = query.getSql();
+            this.logger.log(`전체 SQL 쿼리: ${fullQuery}`);
             const countQuery = this.jobRepository
                 .createQueryBuilder('job')
                 .where('job.status = :status', { status: 'active' });
@@ -102,6 +134,16 @@ let SearchService = SearchService_1 = class SearchService {
                 countQuery.andWhere('job.location IN (:...countRegions)', {
                     countRegions: regions,
                 });
+            }
+            if (annualExperience !== null) {
+                if (annualExperience === 0) {
+                    countQuery.andWhere('(job.annualFrom = 0 OR job.annualFrom IS NULL)');
+                    this.logger.log('카운트 쿼리에 신입 필터 적용');
+                }
+                else {
+                    countQuery.andWhere('(job.annualFrom = :countAnnualExperience OR (job.annualFrom <= :countAnnualExperience AND (job.annualTo >= :countAnnualExperience OR job.annualTo = 100)))', { countAnnualExperience: annualExperience });
+                    this.logger.log(`카운트 쿼리에 ${annualExperience}년차 필터 적용 (범위 포함)`);
+                }
             }
             const totalCount = await countQuery.getCount();
             this.logger.log(`검색 결과 총 개수: ${totalCount}`);

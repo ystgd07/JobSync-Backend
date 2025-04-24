@@ -23,8 +23,16 @@ async function bootstrap() {
         logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
     app.use(cookieParser());
+    app.setGlobalPrefix('api', {
+        exclude: ['/search/test', '/auth/google', '/auth/google/callback'],
+    });
     app.enableCors({
-        origin: true,
+        origin: [
+            'https://www.jobsyncapp.com',
+            'https://jobsyncapp.com',
+            'http://ec2-43-202-227-147.ap-northeast-2.compute.amazonaws.com:3000',
+            'http://localhost:5173',
+        ],
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         credentials: true,
     });

@@ -38,6 +38,30 @@ export class SearchService {
 
       const { categories, regions, cursor, limit = 20 } = searchParams;
 
+      // annualExperience 속성 추출 (경력 필터)
+      let annualExperience: number | null = null;
+      if (
+        searchParams.annualExperience !== undefined &&
+        searchParams.annualExperience !== null
+      ) {
+        if (typeof searchParams.annualExperience === 'number') {
+          annualExperience = searchParams.annualExperience;
+        } else if (typeof searchParams.annualExperience === 'string') {
+          // 문자열을 숫자로 변환 시도
+          const parsed = parseInt(searchParams.annualExperience, 10);
+          if (!isNaN(parsed)) {
+            annualExperience = parsed;
+          }
+        }
+      }
+
+      this.logger.log(
+        `경력 필터 값: ${annualExperience}, 타입: ${typeof annualExperience}`,
+      );
+      this.logger.log(
+        `searchParams.annualExperience 원본 값: ${searchParams.annualExperience}, 타입: ${typeof searchParams.annualExperience}`,
+      );
+
       // 커서가 있으면 디코딩
       let cursorId: number | undefined;
       if (cursor) {
@@ -91,10 +115,43 @@ export class SearchService {
         query = query.andWhere('job.location IN (:...regions)', { regions });
       }
 
+      // 경력 필터 적용
+      if (annualExperience !== null) {
+        // 신입(0년차)인 경우 신입만 필터링
+        if (annualExperience === 0) {
+          this.logger.log('신입 공고만 필터링합니다.');
+          query = query.andWhere(
+            '(job.annualFrom = 0 OR job.annualFrom IS NULL)',
+          );
+          this.logger.log(
+            '적용된 필터: job.annualFrom = 0 OR job.annualFrom IS NULL',
+          );
+        } else {
+          // 특정 경력에 맞는 공고만 필터링 (선택한 경력에 정확히 일치하는 것만)
+          this.logger.log(`${annualExperience}년차 공고만 필터링합니다.`);
+
+          // 수정: 경력 범위에 포함되는 공고도 필터링되도록 수정
+          query = query.andWhere(
+            '(job.annualFrom = :annualExperience OR (job.annualFrom <= :annualExperience AND (job.annualTo >= :annualExperience OR job.annualTo = 100)))',
+            { annualExperience },
+          );
+
+          this.logger.log(
+            `적용된 필터: 경력 ${annualExperience}년차 포함 범위`,
+          );
+        }
+      } else {
+        this.logger.log('경력 필터가 적용되지 않았습니다.');
+      }
+
       // 쿼리 출력
       const queryStr = query.getQueryAndParameters();
       this.logger.log(`실행 쿼리: ${queryStr[0]}`);
       this.logger.log(`쿼리 파라미터: ${JSON.stringify(queryStr[1])}`);
+
+      // 경력 필터 확인을 위한 전체 쿼리 로깅
+      const fullQuery = query.getSql();
+      this.logger.log(`전체 SQL 쿼리: ${fullQuery}`);
 
       // 전체 개수 계산을 위한 복제 쿼리 생성
       const countQuery = this.jobRepository
@@ -125,6 +182,27 @@ export class SearchService {
         countQuery.andWhere('job.location IN (:...countRegions)', {
           countRegions: regions,
         });
+      }
+
+      // 경력 필터 적용 (카운트 쿼리에도 동일하게 적용)
+      if (annualExperience !== null) {
+        // 신입(0년차)인 경우 신입만 필터링
+        if (annualExperience === 0) {
+          countQuery.andWhere('(job.annualFrom = 0 OR job.annualFrom IS NULL)');
+          this.logger.log('카운트 쿼리에 신입 필터 적용');
+        } else {
+          // 특정 경력에 맞는 공고만 필터링
+
+          // 수정: 경력 범위에 포함되는 공고도 필터링되도록 수정
+          countQuery.andWhere(
+            '(job.annualFrom = :countAnnualExperience OR (job.annualFrom <= :countAnnualExperience AND (job.annualTo >= :countAnnualExperience OR job.annualTo = 100)))',
+            { countAnnualExperience: annualExperience },
+          );
+
+          this.logger.log(
+            `카운트 쿼리에 ${annualExperience}년차 필터 적용 (범위 포함)`,
+          );
+        }
       }
 
       // total count 조회

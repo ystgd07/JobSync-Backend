@@ -34,6 +34,7 @@ export declare class JobDto {
 export declare class SearchJobDto {
     categories?: string[];
     regions?: string[];
+    annualExperience?: number;
     cursor?: string;
     limit?: number;
 }

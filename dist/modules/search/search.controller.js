@@ -22,8 +22,23 @@ let SearchController = SearchController_1 = class SearchController {
     constructor(searchService) {
         this.searchService = searchService;
     }
-    testEndpoint() {
-        return { success: true, message: '테스트 API가 정상 작동합니다.' };
+    testEndpoint(query) {
+        this.logger.log(`테스트 엔드포인트 호출, 쿼리: ${JSON.stringify(query)}`);
+        let decodedExperiences = '';
+        if (query.experiences) {
+            try {
+                decodedExperiences = decodeURIComponent(query.experiences);
+            }
+            catch (e) {
+                decodedExperiences = '디코딩 실패: ' + e.message;
+            }
+        }
+        return {
+            success: true,
+            message: '테스트 API가 정상 작동합니다.',
+            receivedQuery: query,
+            decodedExperiences,
+        };
     }
     async getJobsByCategory(query) {
         this.logger.log(`컨트롤러 호출됨, 쿼리: ${JSON.stringify(query)}`);
@@ -32,9 +47,38 @@ let SearchController = SearchController_1 = class SearchController {
             this.logger.log(`쿼리 ${key}: ${query[key]}, 타입: ${typeof query[key]}`);
         });
         try {
+            this.logger.log(`경력 파라미터(experiences): ${query.experiences}, 타입: ${typeof query.experiences}`);
+            let annualExperienceValue = null;
+            if (query.experiences) {
+                try {
+                    const expStr = decodeURIComponent(query.experiences.toString().toLowerCase());
+                    this.logger.log(`디코딩된 경력 파라미터: ${expStr}`);
+                    if (expStr.includes('신입') || expStr === '0') {
+                        annualExperienceValue = 0;
+                    }
+                    else {
+                        const parsedValue = parseInt(expStr, 10);
+                        annualExperienceValue = isNaN(parsedValue) ? null : parsedValue;
+                    }
+                }
+                catch (e) {
+                    this.logger.error(`경력 파라미터 처리 중 오류: ${e.message}`);
+                }
+            }
+            else if (query.annualExperience) {
+                try {
+                    const parsedValue = parseInt(query.annualExperience, 10);
+                    annualExperienceValue = isNaN(parsedValue) ? null : parsedValue;
+                }
+                catch (e) {
+                    this.logger.error(`annualExperience 처리 중 오류: ${e.message}`);
+                }
+            }
+            this.logger.log(`변환된 경력 값: ${annualExperienceValue}, 타입: ${typeof annualExperienceValue}`);
             const searchParams = {
                 categories: query.categories ? query.categories.split(',') : [],
                 regions: query.regions ? query.regions.split(',') : [],
+                annualExperience: annualExperienceValue,
                 cursor: query.cursor,
                 limit: query.limit ? parseInt(query.limit, 10) : 20,
             };
@@ -57,6 +101,7 @@ let SearchController = SearchController_1 = class SearchController {
             const searchParams = {
                 categories: ['개발'],
                 regions: [],
+                annualExperience: null,
                 cursor: null,
                 limit: 20,
             };
@@ -73,11 +118,29 @@ let SearchController = SearchController_1 = class SearchController {
             };
         }
     }
-    async getJobsByPathCategory(categories, limit) {
+    async getJobsByPathCategory(categories, limit, experiences) {
         try {
+            let annualExperience = null;
+            if (experiences) {
+                try {
+                    const expStr = decodeURIComponent(experiences.toString().toLowerCase());
+                    this.logger.log(`디코딩된 경력 파라미터: ${expStr}`);
+                    if (expStr.includes('신입') || expStr === '0') {
+                        annualExperience = 0;
+                    }
+                    else {
+                        const parsedValue = parseInt(expStr, 10);
+                        annualExperience = isNaN(parsedValue) ? null : parsedValue;
+                    }
+                }
+                catch (e) {
+                    this.logger.error(`경력 파라미터 처리 중 오류: ${e.message}`);
+                }
+            }
             const searchParams = {
                 categories: categories ? categories.split(',') : [],
                 regions: [],
+                annualExperience,
                 cursor: null,
                 limit: limit ? parseInt(limit, 10) : 20,
             };
@@ -98,8 +161,9 @@ let SearchController = SearchController_1 = class SearchController {
 exports.SearchController = SearchController;
 __decorate([
     (0, common_1.Get)('test'),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], SearchController.prototype, "testEndpoint", null);
 __decorate([
@@ -119,8 +183,9 @@ __decorate([
     (0, common_1.Get)('cat/:categories'),
     __param(0, (0, common_1.Param)('categories')),
     __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('experiences')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "getJobsByPathCategory", null);
 exports.SearchController = SearchController = SearchController_1 = __decorate([

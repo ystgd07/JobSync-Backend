@@ -98,6 +98,7 @@ __decorate([
 class SearchJobDto {
     categories;
     regions;
+    annualExperience;
     cursor;
     limit;
 }
@@ -118,6 +119,15 @@ __decorate([
     }),
     __metadata("design:type", Array)
 ], SearchJobDto.prototype, "regions", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        required: false,
+        description: '경력 (연차)',
+        example: '1',
+        type: Number,
+    }),
+    __metadata("design:type", Number)
+], SearchJobDto.prototype, "annualExperience", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ required: false, description: '다음 페이지 커서' }),
     __metadata("design:type", String)

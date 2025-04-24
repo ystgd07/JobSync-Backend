@@ -37,12 +37,13 @@ async function bootstrap() {
     exclude: ['/search/test', '/auth/google', '/auth/google/callback'], // 테스트 API 경로
   }); // 모든 API에 /api prefix 추가
 
-  // CORS 설정 추가
+  // CORS 설정 추가 (프로덕션, 개발, ec2 환경 테스트)
   app.enableCors({
     origin: [
       'https://www.jobsyncapp.com',
       'https://jobsyncapp.com',
       'http://ec2-43-202-227-147.ap-northeast-2.compute.amazonaws.com:3000',
+      'http://localhost:5173',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
